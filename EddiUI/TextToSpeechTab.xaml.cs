@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using Utilities;
 
 namespace EddiUI
@@ -17,11 +18,109 @@ namespace EddiUI
         {
             InitializeComponent();
             ConfigureTTS();
+            this.Loaded += TextToSpeechTab_Loaded;
+            this.Unloaded += TextToSpeechTab_Unloaded;
+        }
+
+        private void TextToSpeechTab_Loaded(object sender, RoutedEventArgs e)
+        {
+            var window = Window.GetWindow(this);
+            if (window != null)
+            {
+                var helper = new WindowInteropHelper(window);
+                var source = HwndSource.FromHwnd(helper.Handle);
+                source?.AddHook(HwndMessageHook);
+            }
+        }
+
+        private void TextToSpeechTab_Unloaded(object sender, RoutedEventArgs e)
+        {
+            var window = Window.GetWindow(this);
+            if (window != null)
+            {
+                var helper = new WindowInteropHelper(window);
+                var source = HwndSource.FromHwnd(helper.Handle);
+                source?.RemoveHook(HwndMessageHook);
+            }
+        }
+
+        private IntPtr HwndMessageHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            const int WM_DEVICECHANGE = 0x0219;
+            if (msg == WM_DEVICECHANGE)
+            {
+                RefreshAudioDevices();
+            }
+            return IntPtr.Zero;
+        }
+
+        private void RefreshAudioDevices()
+        {
+            var activeDevices = AudioDeviceService.GetAudioDevices();
+            var currentOptions = ttsAudioDeviceDropDown.ItemsSource as List<AudioDevice>;
+            if (currentOptions == null) return;
+
+            var currentIds = currentOptions.Skip(1).Select(d => d.Id).ToList();
+            var activeIds = activeDevices.Select(d => d.Id).ToList();
+
+            bool changed = currentIds.Count != activeIds.Count || !currentIds.SequenceEqual(activeIds);
+
+            if (changed)
+            {
+                var speechServiceConfiguration = ConfigService.Instance.speechServiceConfiguration;
+                var configuredDevice = speechServiceConfiguration?.AudioDevice;
+
+                var audioDeviceOptions = new List<AudioDevice>
+                {
+                    new AudioDevice { Name = "Default Device", Id = null }
+                };
+                audioDeviceOptions.AddRange(activeDevices);
+
+                ttsAudioDeviceDropDown.SelectionChanged -= ttsAudioDeviceDropDownUpdated;
+                ttsAudioDeviceDropDown.ItemsSource = audioDeviceOptions;
+
+                if (configuredDevice != null && audioDeviceOptions.Any(d => d.Id == configuredDevice))
+                {
+                    ttsAudioDeviceDropDown.SelectedValue = configuredDevice;
+                }
+                else
+                {
+                    ttsAudioDeviceDropDown.SelectedIndex = 0;
+                    if (configuredDevice != null)
+                    {
+                        speechServiceConfiguration.AudioDevice = null;
+                        ConfigService.Instance.speechServiceConfiguration = speechServiceConfiguration;
+                    }
+                }
+                ttsAudioDeviceDropDown.SelectionChanged += ttsAudioDeviceDropDownUpdated;
+            }
         }
 
         public void ConfigureTTS()
         {
             var speechServiceConfiguration = ConfigService.Instance.speechServiceConfiguration;
+            // Populate audio devices
+            var audioDeviceOptions = new List<AudioDevice>
+            {
+                new AudioDevice { Name = "Default Device", Id = null }
+            };
+            audioDeviceOptions.AddRange(AudioDeviceService.GetAudioDevices());
+            ttsAudioDeviceDropDown.ItemsSource = audioDeviceOptions;
+            var configuredDevice = speechServiceConfiguration.AudioDevice;
+            if (configuredDevice != null && audioDeviceOptions.Any(d => d.Id == configuredDevice))
+            {
+                ttsAudioDeviceDropDown.SelectedValue = configuredDevice;
+            }
+            else
+            {
+                ttsAudioDeviceDropDown.SelectedIndex = 0;
+                if (configuredDevice != null)
+                {
+                    speechServiceConfiguration.AudioDevice = null;
+                    ConfigService.Instance.speechServiceConfiguration = speechServiceConfiguration;
+                }
+            }
+
             var speechOptions = new List<VoiceOption>
             {
                 new VoiceOption { Value = "Windows TTS default", DisplayName = "Windows TTS default" }
@@ -113,6 +212,14 @@ namespace EddiUI
             {
                 ttsAzureSaveButton.IsEnabled = true;
                 ttsAzureSaveButton.Content = "Save & Verify";
+            }
+        }
+
+        private void ttsAudioDeviceDropDownUpdated(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.IsLoaded )
+            {
+                ttsUpdated();
             }
         }
 
@@ -228,6 +335,7 @@ namespace EddiUI
         {
             var speechConfiguration = new SpeechServiceConfiguration
             {
+                AudioDevice = ttsAudioDeviceDropDown.SelectedValue?.ToString(),
                 StandardVoice = ttsVoiceDropDown.SelectedItem == null || 
                                 ttsVoiceDropDown.SelectedItem.ToString() == "Windows TTS default" 
                     ? null 

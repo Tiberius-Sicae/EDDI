@@ -391,4 +391,10 @@ Please close the other instance and try again.</value>
   <data name="tab_responders" xml:space="preserve">
     <value>Responders</value>
   </data>
+  <data name="tab_tts_audio_device_label" xml:space="preserve">
+    <value>Audio device:</value>
+  </data>
+  <data name="wiki_hyperlink" xml:space="preserve">
+    <value>project wiki</value>
+  </data>
 </root>

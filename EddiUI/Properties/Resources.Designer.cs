@@ -682,6 +682,15 @@ namespace EddiUI.Properties {
                 return ResourceManager.GetString("tab_tts_voice_label", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Audio device:.
+        /// </summary>
+        public static string tab_tts_audio_device_label {
+            get {
+                return ResourceManager.GetString("tab_tts_audio_device_label", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Volume of speech:.

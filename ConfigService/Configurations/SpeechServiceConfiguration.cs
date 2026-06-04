@@ -15,6 +15,7 @@ namespace EddiConfigService.Configurations
         private int _effectsLevel = 50;
         private int _volume = 80;
         private string _standardVoice;
+        private string _audioDevice;
 
         [ JsonProperty( "standardVoice" ) ]
         public string StandardVoice
@@ -28,6 +29,22 @@ namespace EddiConfigService.Configurations
                 }
 
                 _standardVoice = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [ JsonProperty( "audioDevice" ) ]
+        public string AudioDevice
+        {
+            get => _audioDevice;
+            set
+            {
+                if ( value == _audioDevice )
+                {
+                    return;
+                }
+
+                _audioDevice = value;
                 OnPropertyChanged();
             }
         }
@@ -169,6 +186,7 @@ namespace EddiConfigService.Configurations
         public void Clear()
         {
             StandardVoice = null;
+            AudioDevice = null;
             Volume = 100;
             EffectsLevel = 50;
             DistortOnDamage = true;
