@@ -27,6 +27,7 @@
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
             <Label x:Name="ttsAudioDeviceLabel" Grid.Column="0" Grid.Row="0" Margin="0, 5" VerticalContentAlignment="Center" Content="{x:Static resx:Resources.tab_tts_audio_device_label}" />
             <ComboBox x:Name="ttsAudioDeviceDropDown" Grid.Column="1" Grid.Row="0" Margin="5" VerticalContentAlignment="Center" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="ttsAudioDeviceDropDownUpdated"/>
